@@ -96,7 +96,9 @@ multi_query()
 		if [ -z "$pattern" ]; then
 			# quit.
 			echo 'QAQ: quit.'
-			echo "$call_path" | less
+			if [[ -n "$call_path" ]]; then
+				echo "$call_path" | less
+			fi
 			return 0
 		elif [ "$last_pattern" = "$pattern" ]; then
 			# just show last output.
