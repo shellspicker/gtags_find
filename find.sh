@@ -59,17 +59,15 @@ func_name()
 # once query
 query_main()
 {
-	local tmp line_i
+	local tmp
 
 	preprocess
-	line_i=0
 	# query pattern may be regex, so there may be many query string.
 	for ((xl = 0; xl < $query_line_total; ++xl)); do
 		tmp=$(func_name ${line_list[$xl]} ${file_list[$xl]})
 		if ((${#tmp} != 0)); then
-			((line_i++))
 			tmp="$tmp ${line_list[$xl]}"
-			printf '%3i %40s %40s %20s %5i\n' $line_i ${query_name_list[$xl]} $tmp
+			printf '%40s %40s %20s %5i\n' ${query_name_list[$xl]} $tmp
 		fi
 	done
 }
@@ -79,7 +77,11 @@ once_output()
 {
 	local ret
 
-	ret=$(query_main | sort -n -k1,5 -u)
+	# unique.
+	#ret=$(query_main | sort -k2,3 -u | sort -k3 -k2 -k1)
+	ret=$(query_main | sort -k3 -k2 -k1 -u | awk '!cnt[$2" "$3]++{print}')
+	# add line number prefix.
+	ret=$(echo "$ret" | awk '{printf "%d %s\n", NR, $0}')
 	echo "$ret"
 }
 
