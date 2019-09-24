@@ -9,6 +9,7 @@ fi
 
 # arg maybe regex.
 pattern=$1
+call_path=
 
 # find caller pos for all matching patterns func.
 preprocess()
@@ -86,12 +87,15 @@ once_output()
 multi_query()
 {
 	local reftable last_pattern
+	local down up first
 	local qnum
 
+	first=1
 	for ((;;)); do
 		if [ -z "$pattern" ]; then
 			# quit.
 			echo 'QAQ'
+			echo "$call_path"
 			return 0
 		elif [ "$last_pattern" = "$pattern" ]; then
 			# just show last output.
@@ -110,7 +114,15 @@ multi_query()
 			# new query pattern.
 			# choose the caller func from current output
 			# as next querry pattern.
-			pattern=$(echo "$reftable" | sed "${num}p" | awk '{print $3}')
+			pattern=$(echo "$reftable" | sed -n "${qnum}p" | awk '{print $3}')
+			down=$(echo "$reftable" | sed -n "${qnum}p" | awk '{print $2}')
+			up=$pattern
+			if ((first == 1)); then
+				first=0
+				call_path="$up<-$down"
+			else
+				call_path="$up<-$call_path"
+			fi
 		elif [[ "$qnum" = 'q' || "$qnum" = 'Q' ]]; then
 			pattern=""
 		else
