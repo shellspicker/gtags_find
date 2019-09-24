@@ -87,15 +87,16 @@ once_output()
 multi_query()
 {
 	local reftable last_pattern
-	local down up first
+	local down up up_file up_line first first_pattern
 	local qnum
 
 	first=1
+	first_pattern=
 	for ((;;)); do
 		if [ -z "$pattern" ]; then
 			# quit.
-			echo 'QAQ'
-			echo "$call_path"
+			echo 'QAQ: quit.'
+			echo "$call_path" | less
 			return 0
 		elif [ "$last_pattern" = "$pattern" ]; then
 			# just show last output.
@@ -114,14 +115,18 @@ multi_query()
 			# new query pattern.
 			# choose the caller func from current output
 			# as next querry pattern.
-			pattern=$(echo "$reftable" | sed -n "${qnum}p" | awk '{print $3}')
-			down=$(echo "$reftable" | sed -n "${qnum}p" | awk '{print $2}')
-			up=$pattern
+			# now can recording the call path.
+			down=$(echo "$reftable" | sed -n ${qnum}p | awk '{print $2}')
+			pattern=$(echo "$reftable" | sed -n ${qnum}p | awk '{print $3}')
+			up_file=$(echo "$reftable" | sed -n ${qnum}p | awk '{print $4}')
+			up_line=$(echo "$reftable" | sed -n ${qnum}p | awk '{print $5}')
+			up="$up_file:$up_line:$pattern"
 			if ((first == 1)); then
 				first=0
-				call_path="$up<-$down"
+				first_pattern=$down
+				call_path=$(echo -en "$first_pattern\n$up")
 			else
-				call_path="$up<-$call_path"
+				call_path=$(echo -en "$call_path\n$up")
 			fi
 		elif [[ "$qnum" = 'q' || "$qnum" = 'Q' ]]; then
 			pattern=""
