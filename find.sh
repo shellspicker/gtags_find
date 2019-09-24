@@ -27,33 +27,41 @@ preprocess()
 # find caller func by input line and file.
 func_name()
 {
+	local qline qfile
 	local line func
 	local ret
-	local l r i n
+	local l r i fd_i
+
+	qline=$1
+	qfile=$2
 
 	# special: judge if arg2(file) is not *.c
-	echo "$2" | grep -q '.*\.c'
+	echo "$qfile" | grep -q '.*\.c'
 	if [ $? -ne 0 ]; then
 		return 255
 	fi
 	# show all func name in file.
-	ret=$(global -f $2 |
+	ret=$(global -f $qfile |
 		awk '{printf("%s %d\n", $1, $2)}')
 
 	func=($(echo "$ret" | cut -d' ' -f1))
 	line=($(echo "$ret" | cut -d' ' -f2))
-	n=${#line[*]}
+	fd_i="-1"
+	for ((i = 0; i < ${#line[*]}; ++i)); do
+		local now_line
 
-	for ((i = 0; i < n; ++i)); do
-		l=${line[$i]}
-		# find first line of } from { line.
-		r=$(sed -n "$l"',${/^\}/{=;q}}' $2)
-		# in range is caller func, there is only one.
-		if (( l <= $1 && $1 <= r )); then
-			echo "${func[$i]} $2"
-			return 0
+		now_line=${line[$i]}
+		# find first line of { and } from funcname line.
+		l=$(sed -n "$now_line"',${ /^{/ {=;q} }' $qfile)
+		r=$(sed -n "$now_line"',${ /^}/ {=;q} }' $qfile)
+		# in range is caller func, get the nearest one.
+		if (( l <= $qline && $qline <= r )); then
+			fd_i=$i
 		fi
 	done
+	if [[ $fd_i != "-1" ]]; then
+		echo "${func[$fd_i]} $qfile $qline"
+	fi
 }
 
 # once query
@@ -65,8 +73,7 @@ query_main()
 	# query pattern may be regex, so there may be many query string.
 	for ((xl = 0; xl < $query_line_total; ++xl)); do
 		tmp=$(func_name ${line_list[$xl]} ${file_list[$xl]})
-		if ((${#tmp} != 0)); then
-			tmp="$tmp ${line_list[$xl]}"
+		if [[ -n "$tmp" ]]; then
 			printf '%40s %40s %20s %5i\n' ${query_name_list[$xl]} $tmp
 		fi
 	done
