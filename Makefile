@@ -5,11 +5,12 @@ INCLUDE := -I. \
 	-I/usr/include
 LIBS := -L/usr/lib \
 	-L/usr/lib64
-LDFLAGS :=
-DEFINES :=
-CFLAGS := -g -Wall -O2 $(DEFINES) $(INCLUDE) $(LIBS)
+LDFLAGS := 
+DEFINES := 
+CFLAGS := -g -Wall -O2 $(INCLUDE) $(LIBS) $(LDFLAGS) $(DEFINES)
 CXXFLAGS := $(CFLAGS) -DHAVE_CONFIG_H
 
+# default target
 TARGET: all
 
 # 自定义文件
@@ -19,14 +20,14 @@ OBJS_1 := $(patsubst %.cpp, %.o, $(SRCS_1))
 # 具体编译过程
 sinclude $(OBJS_1:.o=.d)
 $(TARGET_1): $(OBJS_1)
-	@$(CXX) -o$(TARGET_1) $(LDFLAGS) $(OBJS_1)
+	@$(CXX) -o$(TARGET_1) $(OBJS_1)
 # 所有目标合集
 PROGRAM := $(TARGET_1)
 
 # 这个大概不需要改
 .PHONY: all
-all: $(PROGRAM)
-	@echo "make target: $(PROGRAM)"
+all:
+	$(MAKE) $(PROGRAM)
 .PHONY: clean
 clean:
 	@rm -f *.orig *~ *.o *.d $(PROGRAM)
