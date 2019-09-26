@@ -20,17 +20,17 @@ OBJS_1 := $(patsubst %.cpp, %.o, $(SRCS_1))
 # 具体编译过程
 sinclude $(OBJS_1:.o=.d)
 $(TARGET_1): $(OBJS_1)
-	@$(CXX) -o$(TARGET_1) $(OBJS_1)
+	$(CXX) -o$(TARGET_1) $(OBJS_1)
 # 所有目标合集
 PROGRAM := $(TARGET_1)
 
-# 这个大概不需要改
+# 以下大概不需要改
 .PHONY: all
 all:
 	$(MAKE) $(PROGRAM)
 .PHONY: clean
 clean:
-	@rm -f *.orig *~ *.o *.d $(PROGRAM)
+	rm -f *.orig *~ *.o *.d $(PROGRAM)
 
 # 约定俗成的生成头文件依赖关系%.d
 %.d: %.c %.cpp
