@@ -36,7 +36,6 @@ main()
 {
 	std::ios::sync_with_stdio(false);
 	std::cin.tie(0);
-
 	char *cmd = strdup("echo $(ls)");
 	std::vector<std::string> vec_str;
 	exec(cmd, vec_str);
@@ -44,5 +43,6 @@ main()
 	for (auto s : vec_str) {
 		std::cout << s << '\n';
 	}
+
 	return 0;
 }

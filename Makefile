@@ -9,6 +9,9 @@ LDFLAGS :=
 DEFINES := 
 CFLAGS := -g -Wall -O2 $(INCLUDE) $(LIBS) $(LDFLAGS) $(DEFINES)
 CXXFLAGS := $(CFLAGS) -DHAVE_CONFIG_H
+# make工具, Makefile指定
+#MAKE = make
+#MAKEFILE = Makefile
 
 # default target
 TARGET: all
