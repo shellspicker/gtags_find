@@ -85,11 +85,14 @@ once_output()
 	local ret
 
 	# unique.
-	#ret=$(query_main | sort -k2,3 -u | sort -k3 -k2 -k1)
-	ret=$(query_main | sort -k3 -k2 -k1 -u | awk '!cnt[$2" "$3]++{print}')
-	# add line number prefix.
-	ret=$(echo "$ret" | awk '{printf "%d %s\n", NR, $0}')
-	echo "$ret"
+	ret=$(query_main)
+	if [ -n "$ret" ]; then
+		#ret=$(echo "$ret" | sort -k2,3 -u | sort -k3 -k2 -k1)
+		ret=$(echo "$ret" | sort -k3 -k2 -k1 -u | awk '!cnt[$2" "$3]++{print}')
+		# add line number prefix.
+		ret=$(echo "$ret" | awk '{printf "%d %s\n", NR, $0}')
+		echo "$ret"
+	fi
 }
 
 # multiple query with key interaction.
@@ -148,8 +151,8 @@ multi_query()
 }
 
 # choose once or multi query.
-#once_output
-multi_query
+once_output
+#multi_query
 
 # this just for test(debug).
 #query_main

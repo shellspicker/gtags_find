@@ -8,7 +8,7 @@ LIBS := -L/usr/lib \
 LDFLAGS := 
 DEFINES := 
 CFLAGS := -g -Wall -O2 $(INCLUDE) $(LIBS) $(LDFLAGS) $(DEFINES)
-CXXFLAGS := $(CFLAGS) -DHAVE_CONFIG_H
+CXXFLAGS := $(CFLAGS) -std=c++11 -DHAVE_CONFIG_H
 # make工具, Makefile指定
 #MAKE = make
 #MAKEFILE = Makefile
