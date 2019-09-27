@@ -14,14 +14,14 @@ CXXFLAGS := $(CFLAGS) -std=c++11 -DHAVE_CONFIG_H
 #MAKEFILE = Makefile
 
 # default target
-TARGET: all
+default: all
 
 # 自定义文件
 TARGET_1 := ttt
 SRCS_1 := c_shell.cpp
 OBJS_1 := $(patsubst %.cpp, %.o, $(SRCS_1))
-# 具体编译过程
 sinclude $(OBJS_1:.o=.d)
+# 具体编译过程
 $(TARGET_1): $(OBJS_1)
 	$(CXX) -o$(TARGET_1) $(OBJS_1)
 # 所有目标合集
@@ -35,10 +35,17 @@ all:
 clean:
 	rm -f *.orig *~ *.o *.d $(PROGRAM)
 
-# 约定俗成的生成头文件依赖关系%.d
-%.d: %.c %.cpp
-	@set -e;
-	@rm -f $@;
-	@$(CC) -MM $(CPPFLAGS) $< > $@.$$$$; \
-		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-		rm -f $@.$$$$
+%.d: %.cpp
+	@set -e
+	@rm -f $@
+	@$(CXX) -MM $< | sed 's:^\(.*\):$@ \1:g' > $@
+
+# 以下是生成.d文件的4种方法.
+# 形如%.d %.o: %.c something.h...
+# 生成.d的原因是.h里面增加或减少包含其他.h文件, .d也能同步更新.
+#@$(CC) -MM $< | awk '{print "$@ " $$0}' > $@
+#@$(CC) -MM $< | awk '{printf "%s %s\n", "$@", $$0}' > $@
+#@$(CXX) -MM $< | sed 's:^\(.*\):$@ \1:g' > $@
+#@$(CC) -MM $(CPPFLAGS) $< > $@.$$$$; \
+#	sed 's,\($*\)\.o[ :]*,\1.o $@: ,g' < $@.$$$$ > $@; \
+#	rm -f $@.$$$$
