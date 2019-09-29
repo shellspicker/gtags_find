@@ -13,37 +13,40 @@ using std::cin;
 using std::string;
 using std::vector;
 using std::map;
-typedef vector<string> bash_ret;
+using std::pair;
+typedef pair<string, int> bash_ret;
 
 // 运行linux命令并返回
-void
-exec(const char *cmd, bash_ret &vec)
+bash_ret
+exec(const char *cmd, bool trim_endline)
 {
 	//printf("%s cmd is like below:\n"
 	//		"%s\n"
 	//		"exec cmd end\n" , __func__, cmd);
 	FILE *pipe = popen(cmd, "r");
 	char *buf = NULL;
-	int nread;
+	int nread, line = 0;
 	size_t bsize;
-	string line;
-	vec.clear();
+	string ret;
 
 	if (!pipe) {
-		return;
+		pclose(pipe);
+		return make_pair(ret, line);
 	}
 
 	while ((nread = getline(&buf, &bsize, pipe)) != -1) {
-		buf[nread - 1] = 0;
-		line = buf;
-		vec.push_back(line);
+		if (trim_endline)
+			buf[nread - 1] = 0;
+		ret += buf;
+		line++;
 	}
 
 	free(buf);
 	pclose(pipe);
+	return make_pair(ret, line);
 }
 
-char *print(bash_ret &vec, bool to_stdout)
+char *print(vector<string> &vec, bool to_stdout)
 {
 	//if (to_stdout)
 	//	printf("%s stdout:\n", __func__);
@@ -63,68 +66,71 @@ char *print(bash_ret &vec, bool to_stdout)
 
 vector<string> path;
 map<string, int> mmp;
+map<string, bash_ret> table;
 double clk1, clk2;
 
-void dfs(char *pattern)
+void dfs(const char *pattern)
 {
 	bash_ret bret, file, line, func;
 	string cmd, qs = pattern;
-	char *tmp, buf[10233];
+	char buf[10233];
 
+	// have visit?
 	if (mmp[qs] == 1) {
 		return;
 	}
+	// set road tag.
+	// set visit tag.
 	mmp[qs] = 1;
 
-	sprintf(buf, "./find.sh \'%s\'", pattern);
-	cmd = buf;
-	exec(cmd.c_str(), bret);
-
-	if (!bret.size()) {
-		print(path, 1);
-		putchar(10);
-		return;
+	// extend next point.
+	auto it = table.find(qs);
+	if (it != table.end()) {
+		bret = it->second;
+	} else {
+		sprintf(buf, "./find.sh \'%s\'", pattern);
+		cmd = buf;
+		bret = exec(cmd.c_str(), false);
+		table[qs] = bret;
 	}
-	for (long i = 0; i < bret.size(); ++i) {
-		char *nxt_query;
-		string nxt;
-		tmp = print(bret, 0);
+
+	// is leaf?
+	if (!bret.second) {
+		print(path, 1);
+		cout << '\n';
+		goto dfs_end;
+	}
+
+	for (long i = 0; i < bret.second; ++i) {
+		string nxt, nxt_query;
 		sprintf(buf, "echo \"%s\" | sed -n %dp | awk '{print $3}'",
-				tmp, i + 1);
-		free(tmp);
+				bret.first.c_str(), i + 1);
 		cmd = buf;
-		exec(cmd.c_str(), func);
+		func = exec(cmd.c_str(), true);
 
-		tmp = print(bret, 0);
 		sprintf(buf, "echo \"%s\" | sed -n %dp | awk '{print $4}'",
-				tmp, i + 1);
-		free(tmp);
+				bret.first.c_str(), i + 1);
 		cmd = buf;
-		exec(cmd.c_str(), file);
-		tmp = print(bret, 0);
-		sprintf(buf, "echo \"%s\" | sed -n %dp | awk '{print $5}'",
-				tmp, i + 1);
-		free(tmp);
-		cmd = buf;
-		exec(cmd.c_str(), line);
+		file = exec(cmd.c_str(), true);
 
-		tmp = print(func, 0);
-		nxt += func[0] + ':';
-		nxt_query = strdup(tmp);
-		free(tmp);
-		tmp = print(file, 0);
-		nxt += file[0] + ':';
-		free(tmp);
-		tmp = print(line, 0);
-		nxt += line[0];
-		free(tmp);
+		sprintf(buf, "echo \"%s\" | sed -n %dp | awk '{print $5}'",
+				bret.first.c_str(), i + 1);
+		cmd = buf;
+		line = exec(cmd.c_str(), true);
+
+		nxt += func.first + ':';
+		nxt_query = func.first;
+		nxt += file.first + ':';
+		nxt += line.first;
 
 		path.push_back(nxt);
-		dfs(nxt_query);
+		dfs(nxt_query.c_str());
 		path.pop_back();
-		free(nxt_query);
 	}
+dfs_end:
+	//clear visit tag.
 	mmp[qs] = 0;
+	//clear road tag.
 }
 
 void query(char *qstr)
