@@ -35,8 +35,10 @@ exec(const char *cmd, bool trim_endline)
 	}
 
 	while ((nread = getline(&buf, &bsize, pipe)) != -1) {
-		if (trim_endline)
+		if (trim_endline) {
 			buf[nread - 1] = 0;
+		}
+
 		ret += buf;
 		line++;
 	}
@@ -46,21 +48,26 @@ exec(const char *cmd, bool trim_endline)
 	return make_pair(ret, line);
 }
 
-char *print(vector<string> &vec, bool to_stdout)
+char *
+print(vector<string> &vec, bool to_stdout)
 {
 	//if (to_stdout)
 	//	printf("%s stdout:\n", __func__);
 	char *ret = NULL;
 	string scp;
+
 	for (auto s : vec) {
-		if (to_stdout)
+		if (to_stdout) {
 			cout << s << '\n';
-		else {
+		} else {
 			scp += s + '\n';
 		}
 	}
-	if (!to_stdout)
+
+	if (!to_stdout) {
 		ret = strdup(scp.c_str());
+	}
+
 	return ret;
 }
 
@@ -69,7 +76,8 @@ map<string, int> mmp;
 map<string, bash_ret> table;
 double clk1, clk2;
 
-void dfs(const char *pattern)
+void
+dfs(const char *pattern)
 {
 	bash_ret bret, file, line, func;
 	string cmd, qs = pattern;
@@ -79,12 +87,14 @@ void dfs(const char *pattern)
 	if (mmp[qs] == 1) {
 		return;
 	}
+
 	// set road tag.
 	// set visit tag.
 	mmp[qs] = 1;
 
 	// extend next point.
 	auto it = table.find(qs);
+
 	if (it != table.end()) {
 		bret = it->second;
 	} else {
@@ -127,13 +137,15 @@ void dfs(const char *pattern)
 		dfs(nxt_query.c_str());
 		path.pop_back();
 	}
+
 dfs_end:
 	//clear visit tag.
 	mmp[qs] = 0;
 	//clear road tag.
 }
 
-void query(char *qstr)
+void
+query(char *qstr)
 {
 	string qs = qstr;
 	mmp.clear();
@@ -141,10 +153,13 @@ void query(char *qstr)
 	dfs(qstr);
 }
 
-bool arg_parse(int argc, char **argv)
+bool
+arg_parse(int argc, char **argv)
 {
-	if (argc != 2)
+	if (argc != 2) {
 		return false;
+	}
+
 	return true;
 }
 
@@ -158,6 +173,7 @@ main(int argc, char **argv)
 		cout << "arg error\n";
 		return -1;
 	}
+
 	char *input = argv[1];
 	query(input);
 	return 0;
