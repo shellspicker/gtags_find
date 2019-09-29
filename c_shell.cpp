@@ -77,7 +77,7 @@ map<string, bash_ret> table;
 double clk1, clk2;
 
 void
-dfs(const char *pattern)
+dfs(const char *pattern, string *fa)
 {
 	bash_ret bret, file, line, func;
 	string cmd, qs = pattern;
@@ -88,9 +88,15 @@ dfs(const char *pattern)
 		return;
 	}
 
-	// set road tag.
 	// set visit tag.
 	mmp[qs] = 1;
+
+	// set road tag.
+	if (!fa) {
+		path.push_back(qs);
+	} else {
+		path.push_back(*fa);
+	}
 
 	// extend next point.
 	auto it = table.find(qs);
@@ -112,7 +118,7 @@ dfs(const char *pattern)
 	}
 
 	for (long i = 0; i < bret.second; ++i) {
-		string nxt, nxt_query;
+		string tonxt, nxt_query;
 		sprintf(buf, "echo \"%s\" | sed -n %dp | awk '{print $3}'",
 				bret.first.c_str(), i + 1);
 		cmd = buf;
@@ -128,20 +134,19 @@ dfs(const char *pattern)
 		cmd = buf;
 		line = exec(cmd.c_str(), true);
 
-		nxt += func.first + ':';
+		tonxt += func.first + ':';
 		nxt_query = func.first;
-		nxt += file.first + ':';
-		nxt += line.first;
+		tonxt += file.first + ':';
+		tonxt += line.first;
 
-		path.push_back(nxt);
-		dfs(nxt_query.c_str());
-		path.pop_back();
+		dfs(nxt_query.c_str(), &tonxt);
 	}
 
 dfs_end:
 	//clear visit tag.
 	mmp[qs] = 0;
 	//clear road tag.
+	path.pop_back();
 }
 
 void
@@ -149,8 +154,7 @@ query(char *qstr)
 {
 	string qs = qstr;
 	mmp.clear();
-	path.push_back(qs);
-	dfs(qstr);
+	dfs(qstr, NULL);
 }
 
 bool
