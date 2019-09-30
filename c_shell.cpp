@@ -3,6 +3,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <map>
@@ -11,49 +13,45 @@ using std::ios;
 using std::cout;
 using std::cin;
 using std::string;
+using std::stringstream;
+using std::fstream;;
 using std::vector;
 using std::map;
 using std::pair;
 typedef pair<string, int> bash_ret;
 
-// 运行linux命令并返回
+// 运行linux命令并返回.
+// 默认原样输出, 如果需要单行的字符串就开启trim_endline.
 bash_ret
-exec(const char *cmd, bool trim_endline)
+exec(const string cmd, bool trim_endline = false)
 {
-	//printf("%s cmd is like below:\n"
-	//		"%s\n"
-	//		"exec cmd end\n" , __func__, cmd);
-	FILE *pipe = popen(cmd, "r");
+	FILE *pipe = popen(cmd.data(), "r");
 	char *buf = NULL;
-	int nread, line = 0;
 	size_t bsize;
 	string ret;
+	int line = 0;
 
 	if (!pipe) {
-		pclose(pipe);
 		return make_pair(ret, line);
 	}
 
-	while ((nread = getline(&buf, &bsize, pipe)) != -1) {
-		if (trim_endline) {
-			buf[nread - 1] = 0;
-		}
-
+	// c的getline是包含delim的.
+	while (getline(&buf, &bsize, pipe) != -1) {
 		ret += buf;
+		if (trim_endline) {
+			ret.pop_back();
+		}
 		line++;
 	}
 
-	free(buf);
 	pclose(pipe);
 	return make_pair(ret, line);
 }
 
-char *
+// 原本没有换行符的字符串列表, 输出时加上换行符.
+string
 print(vector<string> &vec, bool to_stdout)
 {
-	//if (to_stdout)
-	//	printf("%s stdout:\n", __func__);
-	char *ret = NULL;
 	string scp;
 
 	for (auto s : vec) {
@@ -64,11 +62,15 @@ print(vector<string> &vec, bool to_stdout)
 		}
 	}
 
-	if (!to_stdout) {
-		ret = strdup(scp.c_str());
-	}
+	return scp;
+}
 
-	return ret;
+// 代替sprintf的输出流到字符串的转换.
+void ss_to_s(stringstream &ss, string &s, char delim = '\n')
+{
+	s.clear();
+	getline(ss, s, delim);
+	ss.clear();
 }
 
 vector<string> path;
@@ -77,37 +79,38 @@ map<string, bash_ret> table;
 double clk1, clk2;
 
 void
-dfs(const char *pattern, string *fa)
+dfs(const string pattern, string *fa)
 {
 	bash_ret bret, file, line, func;
-	string cmd, qs = pattern;
-	char buf[10233];
+	string cmd;
 
 	// have visit?
-	if (mmp[qs] == 1) {
+	if (mmp[pattern] == 1) {
 		return;
 	}
 
 	// set visit tag.
-	mmp[qs] = 1;
+	mmp[pattern] = 1;
 
 	// set road tag.
 	if (!fa) {
-		path.push_back(qs);
+		path.push_back(pattern);
 	} else {
 		path.push_back(*fa);
 	}
 
 	// extend next point.
-	auto it = table.find(qs);
+	auto it = table.find(pattern);
 
 	if (it != table.end()) {
 		bret = it->second;
 	} else {
-		sprintf(buf, "./find.sh \'%s\'", pattern);
-		cmd = buf;
-		bret = exec(cmd.c_str(), false);
-		table[qs] = bret;
+		stringstream ss;
+
+		ss << "./find.sh '" << pattern << "'";
+		ss_to_s(ss, cmd);
+		bret = exec(cmd);
+		table[pattern] = bret;
 	}
 
 	// is leaf?
@@ -119,42 +122,42 @@ dfs(const char *pattern, string *fa)
 
 	for (long i = 0; i < bret.second; ++i) {
 		string tonxt, nxt_query;
-		sprintf(buf, "echo \"%s\" | sed -n %dp | awk '{print $3}'",
-				bret.first.c_str(), i + 1);
-		cmd = buf;
-		func = exec(cmd.c_str(), true);
+		stringstream ss;
 
-		sprintf(buf, "echo \"%s\" | sed -n %dp | awk '{print $4}'",
-				bret.first.c_str(), i + 1);
-		cmd = buf;
-		file = exec(cmd.c_str(), true);
+		ss << "echo \"" << bret.first << "\" | sed -n '" <<
+			(i + 1) << "p' | awk '{print $3}'";
+		ss_to_s(ss, cmd, '\0');
+		func = exec(cmd, true);
 
-		sprintf(buf, "echo \"%s\" | sed -n %dp | awk '{print $5}'",
-				bret.first.c_str(), i + 1);
-		cmd = buf;
-		line = exec(cmd.c_str(), true);
+		ss << "echo \"" << bret.first << "\" | sed -n '" <<
+			(i + 1) << "p' | awk '{print $4}'";
+		ss_to_s(ss, cmd, '\0');
+		file = exec(cmd, true);
 
-		tonxt += func.first + ':';
+		ss << "echo \"" << bret.first << "\" | sed -n '" <<
+			(i + 1) << "p' | awk '{print $5}'";
+		ss_to_s(ss, cmd, '\0');
+		line = exec(cmd, true);
+
 		nxt_query = func.first;
+		tonxt += func.first + ':';
 		tonxt += file.first + ':';
 		tonxt += line.first;
-
-		dfs(nxt_query.c_str(), &tonxt);
+		dfs(nxt_query, &tonxt);
 	}
 
 dfs_end:
 	//clear visit tag.
-	mmp[qs] = 0;
+	mmp[pattern] = 0;
 	//clear road tag.
 	path.pop_back();
 }
 
 void
-query(char *qstr)
+query(const string &query_pattern)
 {
-	string qs = qstr;
 	mmp.clear();
-	dfs(qstr, NULL);
+	dfs(query_pattern, NULL);
 }
 
 bool
