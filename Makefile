@@ -28,33 +28,18 @@ default: all
 EXE := ttt
 STATIC := 
 DYNAMIC := 
-SRCS := c_shell.cpp
+SRCS := c_shell.cpp dsm_db.cpp
 OBJS := $(patsubst %.cpp, %.o, $(SRCS))
 sinclude $(OBJS:.o=.d)
-$(EXE): $(STATIC_1) $(OBJS)
-	$(CXX) -o$@ $^ $(STATIC_1) $(LIBS) $(LDFLAGS)
+$(EXE): $(OBJS)
+	$(CXX) -o$@ $^ $(LIBS) $(LDFLAGS)
 $(STATIC): $(OBJS)
 	$(AR) crs $@ $^
 	$(RANLIB) $@
 $(DYNAMIC): $(OBJS)
 	$(CXX) $(SHARE) $@ $^ $(LDFLAGS) $(LIBS)
-
-EXE_1 := 
-STATIC_1 := libdsm_db.a
-DYNAMIC_1 := 
-SRCS_1 := dsm_db.cpp
-OBJS_1 := $(patsubst %.cpp, %.o, $(SRCS_1))
-sinclude $(OBJS_1:.o=.d)
-$(EXE_1): $(OBJS_1)
-	$(CXX) -o$@ $^ $(LIBS) $(LDFLAGS)
-$(STATIC_1): $(OBJS_1)
-	$(AR) crs $@ $^
-	$(RANLIB) $@
-$(DYNAMIC_1): $(OBJS_1)
-	$(CXX) $(SHARE) $@ $^ $(LDFLAGS) $(LIBS)
-
 # 所有目标合集, 多目标的话把所有需要的都放到这里.
-TARGET := $(EXE) $(STATIC_1)
+TARGET := $(EXE)
 
 # 以下一般不需要改
 .PHONY: all
