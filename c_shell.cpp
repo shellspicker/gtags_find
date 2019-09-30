@@ -9,7 +9,6 @@
 #include <vector>
 #include <map>
 
-#include "leveldb/db.h"
 #include "dsm_db.h"
 
 using std::ios;
@@ -21,7 +20,7 @@ using std::fstream;;
 using std::vector;
 using std::map;
 using std::pair;
-typedef pair<string, int> bash_ret;
+typedef string bash_ret;
 
 // 运行linux命令并返回.
 // 默认原样输出, 如果需要单行的字符串就开启trim_endline.
@@ -32,10 +31,9 @@ exec(const string cmd, bool trim_endline = false)
 	char *buf = NULL;
 	size_t bsize;
 	string ret;
-	int line = 0;
 
 	if (!pipe) {
-		return make_pair(ret, line);
+		return ret;
 	}
 
 	// c的getline是包含delim的.
@@ -44,11 +42,10 @@ exec(const string cmd, bool trim_endline = false)
 		if (trim_endline) {
 			ret.pop_back();
 		}
-		line++;
 	}
 
 	pclose(pipe);
-	return make_pair(ret, line);
+	return ret;
 }
 
 // 原本没有换行符的字符串列表, 输出时加上换行符.
@@ -78,14 +75,15 @@ void ss_to_s(stringstream &ss, string &s, char delim = '\n')
 
 vector<string> path;
 map<string, int> mmp;
-map<string, bash_ret> table;
 double clk1, clk2;
+dsm_db db;
 
 void
 dfs(const string pattern, string *fa)
 {
 	bash_ret bret, file, line, func;
-	string cmd;
+	string one_line, cmd;
+	stringstream line_cp;
 
 	// have visit?
 	if (mmp[pattern] == 1) {
@@ -103,49 +101,48 @@ dfs(const string pattern, string *fa)
 	}
 
 	// extend next point.
-	auto it = table.find(pattern);
+	db.get(pattern, &bret);
 
-	if (it != table.end()) {
-		bret = it->second;
-	} else {
+	if (!bret.length()) {
 		stringstream ss;
 
 		ss << "./find.sh '" << pattern << "'";
 		ss_to_s(ss, cmd);
 		bret = exec(cmd);
-		table[pattern] = bret;
+		if (!bret.length())
+			db.put(pattern, "notfoundshit");
+		else
+			db.put(pattern, bret);
 	}
 
 	// is leaf?
-	if (!bret.second) {
+	if (bret == "notfoundshit") {
 		print(path, 1);
 		cout << '\n';
 		goto dfs_end;
 	}
 
-	for (long i = 0; i < bret.second; ++i) {
+	line_cp = stringstream(bret);
+	for (int i = 0; getline(line_cp, one_line, '\n'); ++i) {
 		string tonxt, nxt_query;
 		stringstream ss;
 
-		ss << "echo \"" << bret.first << "\" | sed -n '" <<
-			(i + 1) << "p' | awk '{print $3}'";
+		ss << "echo \"" << one_line << "\" | awk '{print $3}'";
 		ss_to_s(ss, cmd, '\0');
 		func = exec(cmd, true);
 
-		ss << "echo \"" << bret.first << "\" | sed -n '" <<
-			(i + 1) << "p' | awk '{print $4}'";
+		ss << "echo \"" << one_line << "\" | awk '{print $4}'";
 		ss_to_s(ss, cmd, '\0');
 		file = exec(cmd, true);
 
-		ss << "echo \"" << bret.first << "\" | sed -n '" <<
-			(i + 1) << "p' | awk '{print $5}'";
+		ss << "echo \"" << one_line << "\" | awk '{print $5}'";
 		ss_to_s(ss, cmd, '\0');
 		line = exec(cmd, true);
 
-		nxt_query = func.first;
-		tonxt += func.first + ':';
-		tonxt += file.first + ':';
-		tonxt += line.first;
+		nxt_query = func;
+		tonxt += func + ':';
+		tonxt += file + ':';
+		tonxt += line;
 		dfs(nxt_query, &tonxt);
 	}
 
@@ -159,6 +156,7 @@ dfs_end:
 void
 query(const string &query_pattern)
 {
+	db.open("road_table");
 	mmp.clear();
 	dfs(query_pattern, NULL);
 }
