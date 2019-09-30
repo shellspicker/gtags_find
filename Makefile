@@ -11,7 +11,7 @@ LIBS := -L./ \
 	-L/usr/lib/ \
 	-L/usr/lib32/ \
 	-L/usr/local/lib/
-LDFLAGS := 
+LDFLAGS := libdsm_db.a libleveldb.a -lpthread -lsnappy
 DEFINES := 
 CFLAGS := -g -Wall -O2 $(INCLUDE) $(DEFINES)
 CXXFLAGS := -std=c++11 $(CFLAGS) -DHAVE_CONFIG_H

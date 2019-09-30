@@ -9,6 +9,9 @@
 #include <vector>
 #include <map>
 
+#include "leveldb/db.h"
+#include "dsm_db.h"
+
 using std::ios;
 using std::cout;
 using std::cin;
