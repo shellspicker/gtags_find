@@ -11,7 +11,7 @@ LIBS := -L./ \
 	-L/usr/lib/ \
 	-L/usr/lib32/ \
 	-L/usr/local/lib/
-LDFLAGS := libdsm_db.a libleveldb.a -lpthread -lsnappy
+LDFLAGS := libleveldb.a -lpthread -lsnappy
 DEFINES := 
 CFLAGS := -g -Wall -O2 $(INCLUDE) $(DEFINES)
 CXXFLAGS := -std=c++11 $(CFLAGS) -DHAVE_CONFIG_H
@@ -31,17 +31,30 @@ DYNAMIC :=
 SRCS := c_shell.cpp
 OBJS := $(patsubst %.cpp, %.o, $(SRCS))
 sinclude $(OBJS:.o=.d)
-# 具体编译过程, 这里可能会把其他目标的OBJS一起编译进来.
-# LDFLAGS仅在链接时使用.
-$(EXE): $(OBJS)
-	$(CXX) -o$@ $^ $(LIBS) $(LDFLAGS)
+$(EXE): $(STATIC_1) $(OBJS)
+	$(CXX) -o$@ $^ $(STATIC_1) $(LIBS) $(LDFLAGS)
 $(STATIC): $(OBJS)
 	$(AR) crs $@ $^
 	$(RANLIB) $@
 $(DYNAMIC): $(OBJS)
 	$(CXX) $(SHARE) $@ $^ $(LDFLAGS) $(LIBS)
+
+EXE_1 := 
+STATIC_1 := libdsm_db.a
+DYNAMIC_1 := 
+SRCS_1 := dsm_db.cpp
+OBJS_1 := $(patsubst %.cpp, %.o, $(SRCS_1))
+sinclude $(OBJS_1:.o=.d)
+$(EXE_1): $(OBJS_1)
+	$(CXX) -o$@ $^ $(LIBS) $(LDFLAGS)
+$(STATIC_1): $(OBJS_1)
+	$(AR) crs $@ $^
+	$(RANLIB) $@
+$(DYNAMIC_1): $(OBJS_1)
+	$(CXX) $(SHARE) $@ $^ $(LDFLAGS) $(LIBS)
+
 # 所有目标合集, 多目标的话把所有需要的都放到这里.
-TARGET := $(EXE) $(STATIC) $(DYNAMIC)
+TARGET := $(EXE) $(STATIC_1)
 
 # 以下一般不需要改
 .PHONY: all
