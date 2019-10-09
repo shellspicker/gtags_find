@@ -109,10 +109,12 @@ dfs(const string pattern, string *fa)
 		ss << "./find.sh '" << pattern << "'";
 		ss_to_s(ss, cmd);
 		bret = exec(cmd);
-		if (!bret.length())
-			db.put(pattern, "notfoundshit");
-		else
+		if (!bret.length()) {
+			bret = string("notfoundshit");
 			db.put(pattern, bret);
+		} else {
+			db.put(pattern, bret);
+		}
 	}
 
 	// is leaf?
