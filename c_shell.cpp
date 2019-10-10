@@ -82,8 +82,7 @@ void
 dfs(const string pattern, string *fa)
 {
 	bash_ret bret, file, line, func;
-	string one_line, cmd;
-	stringstream line_cp;
+	string cmd;
 
 	// have visit?
 	if (mmp[pattern] == 1) {
@@ -124,28 +123,31 @@ dfs(const string pattern, string *fa)
 		goto dfs_end;
 	}
 
-	line_cp = stringstream(bret);
-	for (int i = 0; getline(line_cp, one_line, '\n'); ++i) {
-		string tonxt, nxt_query;
-		stringstream ss;
+	{
+		stringstream line_cp(bret);
+		string one_line;
+		for (int i = 0; getline(line_cp, one_line, '\n'); ++i) {
+			string tonxt, nxt_query;
+			stringstream ss;
 
-		ss << "echo \"" << one_line << "\" | awk '{print $3}'";
-		ss_to_s(ss, cmd, '\0');
-		func = exec(cmd, true);
+			ss << "echo \"" << one_line << "\" | awk '{print $3}'";
+			ss_to_s(ss, cmd, '\0');
+			func = exec(cmd, true);
 
-		ss << "echo \"" << one_line << "\" | awk '{print $4}'";
-		ss_to_s(ss, cmd, '\0');
-		file = exec(cmd, true);
+			ss << "echo \"" << one_line << "\" | awk '{print $4}'";
+			ss_to_s(ss, cmd, '\0');
+			file = exec(cmd, true);
 
-		ss << "echo \"" << one_line << "\" | awk '{print $5}'";
-		ss_to_s(ss, cmd, '\0');
-		line = exec(cmd, true);
+			ss << "echo \"" << one_line << "\" | awk '{print $5}'";
+			ss_to_s(ss, cmd, '\0');
+			line = exec(cmd, true);
 
-		nxt_query = func;
-		tonxt += func + ':';
-		tonxt += file + ':';
-		tonxt += line;
-		dfs(nxt_query, &tonxt);
+			nxt_query = func;
+			tonxt += func + ':';
+			tonxt += file + ':';
+			tonxt += line;
+			dfs(nxt_query, &tonxt);
+		}
 	}
 
 dfs_end:
