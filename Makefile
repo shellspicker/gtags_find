@@ -22,117 +22,62 @@ MAKEFILE = Makefile
 
 # 文件扩展名相关.
 SRCEXT = .c .cc .cpp .cxx .c++
-# func: get suffix, match them in SRCEXT.
-# arg: srcs.
-get_suffix = $(filter $(suffix $(1)),$(SRCEXT))
-
-# func: get suffix and suffix must be only one.
-# arg: srcs, ret_suffix.
-# none is not regular suffix.
-#define suffix_uniq
-#    suf_arr := $(call get_suffix, $(1))
-#    suf_cnt := $(words $(suf_arr))
-#    ifeq ($(suf_cnt),1)
-#        $(2) := $(suf_arr)
-#    endif
-#    undefine suf_arr
-#    undefine suf_cnt
-#endef
-
-# this func is useful.
-# arg: srcs, varsuffix.
-define suffix_uniq
-	ifeq ($(words $(call get_suffix,$(SRCS_$(1)))),1)
-		SUFFIX_$(1) := $(call get_suffix,$(SRCS_$(1)))
-	else
-		SUFFIX_$(1) := fuck
-	endif
-	ifneq ($(SUFFIX_$(1)),fuck)
-		ifeq ($(SUFFIX_$(1)),.c)
-			CC_$(1) := $(CC)
-		else
-			CC_$(1) := $(CXX)
-		endif
-	endif
-endef
-
-# func: get compiler is gcc or g++.
-# arg: src, suffix, compiler.
-define init_compiler
-	$(eval $(call suffix_uniq, $(1), $(2)))
-	ifeq ($(2), .c)
-		$(3) := $(CC)
-	endif
-	ifeq ($(2), .cpp)
-		$(3) := $(CXX)
-	endif
-endef
 
 # default target
 default: all
 
 # 这块自行修改.
-# 所有目标, 填数字即可, 对应aim_$<.
-aimid_all = 1
-.PHONY: aim_all
-aim_all: init_1
-	@echo "in "$@
-#	@for id in $(aimid_all);
-	@echo "SUFFIX_1 is $(SUFFIX_1)"
-	@echo "CC_1 is $(CC_1)"
-	@echo "OBJS_1 IS $(OBJS_1)"
-	@echo "out "$@
+# 所有目标, 填对应的后缀数字即可.
+.PHONY: aimid_all init_all
+aimid_all = 1 2
+init_all:
+	@$(foreach id,$(aimid_all),$(eval $(call preprocess,$(id))))
 # 自定义文件, 支持多个目标, 写好每个目标的源文件名和目标文件名.
 # 有编译可执行文件, 静态链接库, 动态链接库.
-#aim_1 ?= $(call gen_temp) #写在这里会每次都生成一下随机名字, 导致找不到目标.
-EXE_1:= ttt
-STATIC_1 := 
-DYNAMIC_1 := 
+EXE_1 := ttt
+STATIC_1 :=
+DYNAMIC_1 :=
 ALL_1 := $(EXE_1) $(STATIC_1) $(DYNAMIC_1)
 SRCS_1 := c_shell.cpp dsm_db.cpp
+ifdef OBJS_1
+	sinclude $(OBJS_1:.o=.d)
+endif
 # 具体编译过程, 这里可能会把其他目标的OBJS一起编译进来.
 # LDFLAGS仅在链接时使用.
-$(EXE_1): $(OBJS_1)
-	@echo "in $@"
-	@echo "ALL_1 IS $(ALL_1)"
-	@echo "CC_1 is $(CC_1)"
-	@echo "SUFFIX_1 is $(SUFFIX_1)"
-	@echo "OBJS_1 IS $(OBJS_1)"
-	$(CC_1) -o$@ $^ $(LIBS) $(LDFLAGS)
-	@echo "out $@"
+$(EXE_1): $(OBJS_1) $(ALL_2)
+	$(CC_1) -o $@ $^ $(LIBS) $(LDFLAGS)
 $(STATIC_1): $(OBJS_1)
 	$(AR) crs $@ $^
 	$(RANLIB) $@
 $(DYNAMIC_1): $(OBJS_1)
 	$(CC_1) $(SHARE) $@ $^ $(LDFLAGS) $(LIBS)
-# 需要按照源文件类型获得后缀和编译器类型.
-.PHONY: init_1
-init_1:
-	@echo "in $@"
-#	@$(eval $(call init_compiler, $(SRCS_1), SUFFIX_1, CC_1))
-#	this call not use(origin version).
-#	$(eval $(call suffix_uniq, $(SRCS_1), SUFFIX_1))
-	$(eval $(call suffix_uniq,1))
-	@echo "SUFFIX_1 is $(SUFFIX_1)"
-	@echo "CC_1 is $(CC_1)"
-	$(eval OBJS_1 = $(SRCS_1:$(SUFFIX_1)=.o))
-	@echo "OBJS_1 IS $(OBJS_1)"
-	$(eval sinclude $(OBJS_1:.o=.d))
-	$(eval TARGET += $(ALL_1))
-	$(eval export SUFFIX_1 CC_1 OBJS_1)
-	make $(ALL_1)
-	@echo "out $@"
+EXE_2 :=
+STATIC_2 := libdsmdb.a
+DYNAMIC_2 :=
+ALL_2 := $(EXE_2) $(STATIC_2) $(DYNAMIC_2)
+SRCS_2 := dsm_db.cpp
+ifdef OBJS_2
+	sinclude $(OBJS_2:.o=.d)
+endif
+# 具体编译过程, 这里可能会把其他目标的OBJS一起编译进来.
+# LDFLAGS仅在链接时使用.
+$(EXE_2): $(OBJS_2)
+	$(CC_2) -o $@ $^ $(LIBS) $(LDFLAGS)
+$(STATIC_2): $(OBJS_2)
+	$(AR) crs $@ $^
+	$(RANLIB) $@
+$(DYNAMIC_2): $(OBJS_2)
+	$(CC_2) $(SHARE) $@ $^ $(LDFLAGS) $(LIBS)
 # 所有目标合集, 多目标的话把所有需要的都放到这里.
 TARGET :=
 
 # 以下一般不需要改
-.PHONY: all
-all: aim_all
-	@echo "in $@"
-	@echo "TARGET IS $(TARGET)"
-	@echo "out $@"
-.PHONY: clean
-clean:
+.PHONY: build rebuild all clean cleanall
+build: all
+rebuild: cleanall build
+all: init_all
+	$(MAKE) -f $(MAKEFILE) $(TARGET)
+clean: init_all
 	rm -f *.orig *~ *.o *.d
 cleanall: clean
 	rm -f $(TARGET)
@@ -162,3 +107,43 @@ endef
 #@$(CC) -MM $(CPPFLAGS) $< > $@.$$$$; \
 #	sed 's,\($*\)\.o[ :]*,\1.o $@: ,g' < $@.$$$$ > $@; \
 #	rm -f $@.$$$$
+
+# func: get suffix, match them in SRCEXT.
+# arg: srcs.
+get_suffix = $(filter $(suffix $(1)),$(SRCEXT))
+# func: get suffix is .c or .cpp...
+# arg: srcs, suffix.
+define init_suffix
+	ifeq ($(words $(call get_suffix,$(1))),1)
+		$(2) := $(call get_suffix,$(1))
+	endif
+endef
+# func: get compiler is gcc or g++.
+# arg: suffix, compiler.
+define init_compiler
+	ifeq ($(1),.c)
+		$(2) := $(CC)
+	endif
+	ifeq ($(1),.cpp)
+		$(2) := $(CXX)
+	endif
+endef
+
+# 按照源文件类型获得后缀和编译器类型.
+define preprocess
+	$(eval $(call init_suffix,$(SRCS_$(1)),SUFFIX_$(1)))
+	$(eval $(call init_compiler,$(SUFFIX_$(1)),CC_$(1)))
+	OBJS_$(1) = $(SRCS_$(1):$(SUFFIX_$(1))=.o)
+	TARGET += $(ALL_$(1))
+	export SUFFIX_$(1) CC_$(1) OBJS_$(1)
+endef
+
+# debug, call as below.
+#	@$(foreach id,$(aimid_all),$(call debug_preprocess,$(id)))
+define debug_preprocess
+	@echo debug begin!!!
+	@echo suffix: $(SUFFIX_$(1))$$
+	@echo cc: $(CC_$(1))$$
+	@echo objs: $(OBJS_$(1))$$
+	@echo debug end!!!
+endef
