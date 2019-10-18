@@ -45,8 +45,6 @@ define dim_file_relevant
 	ALL_$(1) = $(3)
 	SRCS_$(1) = $(4)
 endef
-#	ifdef OBJS_$(1)
-#	endif
 
 # 这块自行修改.
 # 所有目标, 填对应的后缀数字即可.
@@ -58,6 +56,7 @@ init_all:
 	@$(foreach id,$(aimid_all), \
 		$(eval $(call preprocess,$(id))) \
 		$(eval REQ_$(id) = $(OBJS_$(id))) \
+		$(eval sinclude $(OBJS_$(id):.o=.d)) \
 		$(eval TARGET += $(ALL_$(id))) \
 		)
 	$(eval REQ_1 += $(ALL_2))
@@ -140,13 +139,7 @@ define preprocess
 	$(eval $(call init_suffix,$(SRCS_$(1)),SUFFIX_$(1)))
 	$(eval $(call init_compiler,$(SUFFIX_$(1)),CC_$(1)))
 	OBJS_$(1) = $(SRCS_$(1):$(SUFFIX_$(1))=.o)
-	sinclude $(OBJS_$(1):.o=.d)
 endef
-#	$(eval $(call init_suffix,$(SRCS_$(1)),SUFFIX_$(1)))
-#	$(eval $(call init_compiler,$(SUFFIX_$(1)),CC_$(1)))
-#	OBJS_$(1) = $(SRCS_$(1):$(SUFFIX_$(1))=.o)
-#	TARGET += $(ALL_$(1))
-#	export SUFFIX_$(1) CC_$(1) OBJS_$(1)
 
 # debug, call as below.
 #	@$(foreach id,$(aimid_all),$(call debug_preprocess,$(id)))
