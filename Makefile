@@ -41,30 +41,35 @@ endef
 
 # args:(id,mode,dest,src)
 define dim_file_relevant
+	aimid_all += $(1)
 	MODE_$(1) = $(2)
-	ALL_$(1) = $(3)
+	$(eval ALL_$(1) = $(3))
 	SRCS_$(1) = $(4)
+	TARGET += $(ALL_$(1))
+	export aimid_all MODE_$(1) ALL_$(1) SRCS_$(1)
+	export TARGET
 endef
 
 # 这块自行修改.
 # 所有目标, 填对应的后缀数字即可.
-.PHONY: aimid_all init_all
-aimid_all = 1 2
+.PHONY: init_all
+ifneq ($(aimid_all),)
+    obj_all = $(foreach id,$(aimid_all),$(OBJS_$(id)))
+endif
+ifneq ($(obj_all),)
+    sinclude $(obj_all:.o=.d)
+endif
 init_all:
 	$(eval $(call dim_file_relevant,1,exe,ttt,c_shell.cpp))
 	$(eval $(call dim_file_relevant,2,static,libdsmdb.a,dsm_db.cpp))
 	@$(foreach id,$(aimid_all), \
 		$(eval $(call preprocess,$(id))) \
 		$(eval REQ_$(id) = $(OBJS_$(id))) \
-		$(eval sinclude $(OBJS_$(id):.o=.d)) \
-		$(eval TARGET += $(ALL_$(id))) \
 		)
 	$(eval REQ_1 += $(ALL_2))
 	@$(foreach id,$(aimid_all),\
-		$(eval export ALL_$(id) REQ_$(id) MODE_$(id) CC_$(id)) \
+		$(eval export REQ_$(id)) \
 		)
-#	@$(foreach id,$(aimid_all), \
-#		$(call debug,$(id)))
 # 自定义文件, 支持多个目标, 写好每个目标的源文件名和目标文件名.
 # 有编译可执行文件, 静态链接库, 动态链接库.
 $(ALL_1): $(REQ_1)
@@ -72,15 +77,13 @@ $(ALL_1): $(REQ_1)
 $(ALL_2): $(REQ_2)
 	$(call compile_$(MODE_2),$(CC_2))
 # 所有目标合集, 多目标的话把所有需要的都放到这里.
-TARGET :=
 
 # 以下一般不需要改
 .PHONY: build rebuild all clean cleanall
 build: all
 rebuild: cleanall build
 all: init_all
-#	@echo now make $(TARGET)
-	$(MAKE) -f $(MAKEFILE) $(TARGET)
+	@$(MAKE) -f $(MAKEFILE) $(TARGET)
 clean: init_all
 	rm -f *.orig *~ *.o *.d
 cleanall: clean
@@ -139,6 +142,7 @@ define preprocess
 	$(eval $(call init_suffix,$(SRCS_$(1)),SUFFIX_$(1)))
 	$(eval $(call init_compiler,$(SUFFIX_$(1)),CC_$(1)))
 	OBJS_$(1) = $(SRCS_$(1):$(SUFFIX_$(1))=.o)
+	export OBJS_$(id) CC_$(id)
 endef
 
 # debug, call as below.
