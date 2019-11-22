@@ -74,7 +74,7 @@ query_main()
 	for ((xl = 0; xl < $query_line_total; ++xl)); do
 		tmp=$(func_name ${line_list[$xl]} ${file_list[$xl]})
 		if [[ -n "$tmp" ]]; then
-			printf '%40s %40s %20s %5i\n' ${query_name_list[$xl]} $tmp
+			printf '%40s %40s %20s %5d\n' ${query_name_list[$xl]} $tmp
 		fi
 	done
 }
