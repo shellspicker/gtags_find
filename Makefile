@@ -1,20 +1,23 @@
 # 编译参数
-CC := gcc
-CXX := g++
-AR := ar
-RANLIB := ranlib
-SHARE := -fpic -shared -o
-INCLUDE := -I./ \
-	-I/usr/include/ \
+CC = gcc
+CXX = g++
+AR = ar
+RANLIB = ranlib
+SHARE = -fpic -shared -o
+INCLUDE = -I./\
+	-I/usr/include/\
 	-I/usr/local/include/
-LIBS := -L./ \
-	-L/usr/lib/ \
-	-L/usr/lib32/ \
+LIBS = -L./\
+	-L/usr/lib/\
+	-L/usr/lib32/\
 	-L/usr/local/lib/
-LDFLAGS := -lleveldb -lpthread -lsnappy
-DEFINES :=
-CFLAGS := -g -Wall -O2 $(INCLUDE) $(DEFINES)
-CXXFLAGS := -std=c++11 $(CFLAGS) -DHAVE_CONFIG_H
+LIBS_WITHOUT_L = $(subst -L,,$(LIBS))
+LDD_PATH = $(subst $(none)$(space),:,$(LIBS_WITHOUT_L))
+LDFLAGS = $(LIBS) -Wl,-rpath=$(subst $(space),:,$(subst -L,,$(LIBS)))\
+	-lleveldb -lpthread -lsnappy
+DEFINES =
+CFLAGS = -g -Wall -O2 $(INCLUDE) $(DEFINES)
+CXXFLAGS = -std=c++11 $(CFLAGS) -DHAVE_CONFIG_H
 
 # make工具, Makefile指定.
 MAKE = make
@@ -52,14 +55,14 @@ init_all:
 # 自定义文件, 支持多个目标, 写好每个目标的信息, 具体看函数的参数.
 #	$(eval $(call dim_file_relevant,,,,))
 	$(eval $(call dim_file_relevant,1,exe,ttt,c_shell.cpp dsm_db.cpp))
-	@$(foreach id,$(aimid_all), \
-		$(eval $(call preprocess,$(id))) \
-		$(eval REQ_$(id) = $(OBJS_$(id))) \
+	@$(foreach id,$(aimid_all),\
+		$(eval $(call preprocess,$(id)))\
+		$(eval REQ_$(id) = $(OBJS_$(id)))\
 		)
 # 额外的目标之间的依赖.
 #	$(eval REQ_XXX += $(ALL_XXX))
 	@$(foreach id,$(aimid_all),\
-		$(eval export REQ_$(id)) \
+		$(eval export REQ_$(id))\
 		)
 	$(eval export aimid_all TARGET)
 
@@ -101,6 +104,7 @@ endef
 #	sed 's,\($*\)\.o[ :]*,\1.o $@: ,g' < $@.$$$$ > $@; \
 #	rm -f $@.$$$$
 
+space = $(none) # space ' '
 # func: get suffix, match them in SRCEXT.
 # args: (srcs).
 get_suffix = $(filter $(suffix $(1)),$(SRCEXT))
@@ -108,17 +112,17 @@ get_suffix = $(filter $(suffix $(1)),$(SRCEXT))
 # args: (srcs, suffix).
 define init_suffix
 	ifeq ($(words $(call get_suffix,$(1))),1)
-		$(2) := $(call get_suffix,$(1))
+		$(2) = $(call get_suffix,$(1))
 	endif
 endef
 # func: get compiler is gcc or g++.
 # args: (suffix, compiler).
 define init_compiler
 	ifeq ($(1),.c)
-		$(2) := $(CC)
+		$(2) = $(CC)
 	endif
 	ifeq ($(1),.cpp)
-		$(2) := $(CXX)
+		$(2) = $(CXX)
 	endif
 endef
 
@@ -135,7 +139,7 @@ endef
 # compile relevant.
 # args: (cc).
 define compile_exe
-	$(1) -o $@ $^ $(LIBS) $(LDFLAGS)
+	$(1) -o $@ $^ $(LDFLAGS)
 endef
 # args: ().
 define compile_static
@@ -144,7 +148,7 @@ define compile_static
 endef
 # args: (cc).
 define compile_dynamic
-	$(1) $(SHARE) $@ $^ $(LDFLAGS) $(LIBS)
+	$(1) $(SHARE) $@ $^ $(LDFLAGS)
 endef
 
 # func: dim file info.
