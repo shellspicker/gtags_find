@@ -34,55 +34,51 @@ preprocess()
 	query_line_total=${#line_list[*]}
 }
 
-# arg: line, file
-# find caller func by input line and file.
+# We get info about below command:
+# As a file and func info:
+# 	global -f <file>.
+# As a caller func and line info:
+# 	global -xr <func>.
+# This func will find which function does the line belong to(in a file).
+# Args: (line)
 func_name()
 {
 	local qline qfile
-	local line func
-	local ret
+	local stline func_list line_list
 	local l r i fd_i
-	local stline
-	local like_pre last_query_scc_line
 
 	qline=$1
 	qfile=$2
-	like_pre=$3
-	last_query_scc_line=$4
 
-	# special: judge if arg2(file) is not *.c
-	echo "$qfile" | grep -q '.*\.c'
-	if [ $? -ne 0 ]; then
-		return 255
-	fi
 	# show all func name in file.
-	ret=$(global -f $qfile |
-		awk '{printf("%s %d\n", $1, $2)}')
-
-	func=($(echo "$ret" | cut -d' ' -f1))
-	line=($(echo "$ret" | cut -d' ' -f2))
-	if [[ $like_pre == "0" ]]; then
-		stline=0
-	else
-		stline=${!last_query_scc_line}
-	fi
+	#let $global_f=$(global -f $qfile | awk '{printf("%s %d\n", $1, $2)}')
+	stline=$last_fd
+	func_list=($(echo "$global_f" | cut -d' ' -f1))
+	line_list=($(echo "$global_f" | cut -d' ' -f2))
+	#echo "stline: $stline"
+	#echo "func_list: ${func_list[*]}"
+	#echo "line_list: ${line_list[*]}"
+	#echo "line_list len: ${#line_list[*]}"
 	fd_i=-1
-	for ((i = 0; i < ${#line[*]}; ++i)); do
+	q_funcname=
+	for ((i = stline; i < ${#line_list[*]}; ++i)); do
 		local now_line
 
-		now_line=${line[$i]}
+		now_line=${line_list[$i]}
 		# find first line of { and } from funcname line.
 		l=$(sed -n "$now_line"',$ {/) *{$\|^{$/ {=;q}}' $qfile)
 		r=$(sed -n "$now_line"',${/^}$/ {=;q}}' $qfile)
 		# in range is caller func, get the nearest one.
-		if (( l <= $qline && $qline <= r )); then
+		if (( l <= qline && qline <= r )); then
 			fd_i=$i
-			let "$last_query_scc_line=$i"
+			last_fd=$i
+		fi
+		if [[ $fd_i != "-1" ]] && (( qline < l || r < qline )); then
 			break 1
 		fi
 	done
 	if [[ $fd_i != "-1" ]]; then
-		echo "${func[$fd_i]} $qfile $qline"
+		q_funcname=${func_list[$fd_i]}
 	fi
 }
 
@@ -90,8 +86,9 @@ func_name()
 query_main()
 {
 	local tmp
-	local last_fd # ptr
 	local pre_filename now_filename
+	local last_fd global_f
+	local qfile qline q_funcname
 
 	#debug "preprocess begin: $(curtime)"
 	preprocess
@@ -99,17 +96,27 @@ query_main()
 	# query pattern may be regex, so there may be many query string.
 	#debug "func name begin: $(curtime)"
 	pre_filename=""
+
 	for ((xl = 0; xl < $query_line_total; ++xl)); do
 		#debug "call once begin: $(curtime)"
 		now_filename=${file_list[$xl]}
+		qfile=$now_filename
+		qline=${line_list[$xl]}
+
+		# Filter the file name in: *.c.
+		echo "$now_filename" | grep -q '.*\.c'
+		if [ $? -ne 0 ]; then
+			continue 1
+		fi
 		if [[ "$now_filename" != "$pre_filename" ]]; then
-			tmp=$(func_name ${line_list[$xl]} ${file_list[$xl]} 0 last_fd)
-		else
-			tmp=$(func_name ${line_list[$xl]} ${file_list[$xl]} 1 last_fd)
+			last_fd=0
+			global_f=$(global -f ${file_list[$xl]} |
+				awk '{printf("%s %d\n", $1, $2)}')
 		fi
 		pre_filename=$now_filename
-		if [[ -n "$tmp" ]]; then
-			printf '%40s %40s %20s %5i\n' ${query_name_list[$xl]} $tmp
+		func_name $qline $qfile
+		if [[ -n "$q_funcname" ]]; then
+			printf '%40s %40s %20s %5d\n' ${query_name_list[$xl]} $q_funcname $qfile $qline
 		fi
 		#debug "call once end: $(curtime)"
 	done
