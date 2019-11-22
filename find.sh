@@ -151,8 +151,8 @@ multi_query()
 }
 
 # choose once or multi query.
-once_output
+#once_output
 #multi_query
 
 # this just for test(debug).
-#query_main
+query_main
