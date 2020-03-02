@@ -135,7 +135,7 @@ once_output()
 		#ret=$(echo "$ret" | sort -k2,3 -u | sort -k3 -k2 -k1)
 		ret=$(echo "$ret" | sort -k3 -k2 -k1 -u | awk '!cnt[$2" "$3]++{print}')
 		# add line number prefix.
-		ret=$(echo "$ret" | awk '{printf "%d %s\n", NR, $0}')
+		ret=$(echo "$ret" | awk '{printf "%3d %s\n", NR, $0}')
 		echo "$ret"
 	fi
 	#debug "sort end: $(curtime)"
@@ -198,8 +198,8 @@ multi_query()
 }
 
 # choose once or multi query.
-#once_output
+once_output
 #multi_query
 
 # this just for test(debug).
-query_main
+#query_main
