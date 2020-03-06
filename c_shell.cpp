@@ -9,6 +9,7 @@
 #include <vector>
 #include <map>
 
+#include "idref.h"
 #include "dsm_db.h"
 
 using std::ios;
@@ -32,16 +33,14 @@ exec(const string cmd, bool trim_endline = false)
 	size_t bsize;
 	string ret;
 
-	if (!pipe) {
+	if (!pipe)
 		return ret;
-	}
 
 	// c的getline是包含delim的.
 	while (getline(&buf, &bsize, pipe) != -1) {
 		ret += buf;
-		if (trim_endline) {
+		if (trim_endline)
 			ret.pop_back();
-		}
 	}
 
 	pclose(pipe);
@@ -55,11 +54,10 @@ print(vector<string> &vec, bool to_stdout)
 	string scp;
 
 	for (auto s : vec) {
-		if (to_stdout) {
+		if (to_stdout)
 			cout << s << '\n';
-		} else {
+		else
 			scp += s + '\n';
-		}
 	}
 
 	return scp;
@@ -75,7 +73,6 @@ void ss_to_s(stringstream &ss, string &s, char delim = '\n')
 
 vector<string> path;
 map<string, int> mmp;
-double clk1, clk2;
 dsm_db db;
 
 void
@@ -85,19 +82,17 @@ dfs(const string pattern, string *fa)
 	string cmd;
 
 	// have visit?
-	if (mmp[pattern] == 1) {
+	if (mmp[pattern] == 1)
 		return;
-	}
 
 	// set visit tag.
 	mmp[pattern] = 1;
 
 	// set road tag.
-	if (!fa) {
+	if (!fa)
 		path.push_back(pattern);
-	} else {
+	else
 		path.push_back(*fa);
-	}
 
 	// extend next point.
 	db.get(pattern, &bret);
@@ -108,12 +103,9 @@ dfs(const string pattern, string *fa)
 		ss << "./find.sh '" << pattern << "'";
 		ss_to_s(ss, cmd);
 		bret = exec(cmd);
-		if (!bret.length()) {
+		if (!bret.length())
 			bret = string("notfoundshit");
-			db.put(pattern, bret);
-		} else {
-			db.put(pattern, bret);
-		}
+		db.put(pattern, bret);
 	}
 
 	// is leaf?
@@ -161,16 +153,32 @@ void
 query(const string &query_pattern)
 {
 	db.open("road_table");
-	mmp.clear();
-	dfs(query_pattern, NULL);
+	string ques(query_pattern), cmd, qcount, qall;
+	stringstream ss;
+	ss << "global -x " << ques << " | wc -l";
+	ss_to_s(ss, cmd);
+	qcount = exec(cmd, true);
+	ss << "global -x " << ques << " | awk {'print $1'}";
+	ss_to_s(ss, cmd);
+	qall = exec(cmd);
+	if (qcount != "1") {
+		cout << "just input exactly 1 string, if use regex, must ensure that "
+			"query string is only one, thus find.sh can't deal.\n";
+		cout << "now query string count: " << qcount << '\n';
+		cout << qall;
+		return;
+	}
+	ss << "global -x " << ques << " | awk {'print $1'}";
+	ss_to_s(ss, cmd);
+	ques = exec(cmd, true);
+	dfs(ques, NULL);
 }
 
 bool
 arg_parse(int argc, char **argv)
 {
-	if (argc != 2) {
+	if (argc != 2)
 		return false;
-	}
 
 	return true;
 }
