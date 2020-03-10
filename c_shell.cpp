@@ -16,6 +16,7 @@
 using std::ios;
 using std::cout;
 using std::cin;
+using std::cerr;
 using std::string;
 using std::stringstream;
 using std::fstream;;
@@ -166,11 +167,11 @@ dfs_end:
 #if PRINT_PATH
 	//clear road tag.
 	path.pop_back();
-	//clear visit tag.
-	sst.erase(pattern);
 #else
 	;
 #endif
+	//clear visit tag.
+	sst.erase(pattern);
 }
 
 void
