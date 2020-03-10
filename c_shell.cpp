@@ -74,8 +74,10 @@ void ss_to_s(stringstream &ss, string &s, char delim = '\n')
 }
 
 vector<string> path;
-set<string> sst;
+set<string> sst, st_edge;
 dsm_db db;
+
+#define PRINT_PATH 0
 
 void
 dfs(const string pattern, string *fa)
@@ -86,15 +88,22 @@ dfs(const string pattern, string *fa)
 	// have visit?
 	if (sst.count(pattern))
 		return;
-
 	// set visit tag.
 	sst.insert(pattern);
-
 	// set road tag.
+#if PRINT_PATH
 	if (!fa)
 		path.push_back(pattern);
 	else
 		path.push_back(*fa);
+#else
+	if (fa) {
+		if (!st_edge.count(*fa)) {
+			st_edge.insert(*fa);
+			cout << *fa << '\n';
+		}
+	}
+#endif
 
 	// extend next point.
 	db.get(pattern, &bret);
@@ -112,8 +121,12 @@ dfs(const string pattern, string *fa)
 
 	// is leaf?
 	if (bret == "notfoundshit") {
+#if PRINT_PATH
 		print(path, 1);
 		cout << '\n';
+#else
+		;
+#endif
 		goto dfs_end;
 	}
 
@@ -137,18 +150,27 @@ dfs(const string pattern, string *fa)
 			line = exec(cmd, true);
 
 			nxt_query = func;
+#if PRINT_PATH
 			tonxt += func + ':';
 			tonxt += file + ':';
 			tonxt += line;
+#else
+			tonxt += func + ":";
+			tonxt += pattern;
+#endif
 			dfs(nxt_query, &tonxt);
 		}
 	}
 
 dfs_end:
-	//clear visit tag.
-	sst.erase(pattern);
+#if PRINT_PATH
 	//clear road tag.
 	path.pop_back();
+	//clear visit tag.
+	sst.erase(pattern);
+#else
+	;
+#endif
 }
 
 void
