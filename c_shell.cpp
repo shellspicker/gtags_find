@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 
 #include "idref.h"
 #include "dsm_db.h"
@@ -20,6 +21,7 @@ using std::stringstream;
 using std::fstream;;
 using std::vector;
 using std::map;
+using std::set;
 using std::pair;
 typedef string bash_ret;
 
@@ -72,7 +74,7 @@ void ss_to_s(stringstream &ss, string &s, char delim = '\n')
 }
 
 vector<string> path;
-map<string, int> mmp;
+set<string> sst;
 dsm_db db;
 
 void
@@ -82,11 +84,11 @@ dfs(const string pattern, string *fa)
 	string cmd;
 
 	// have visit?
-	if (mmp[pattern] == 1)
+	if (sst.count(pattern))
 		return;
 
 	// set visit tag.
-	mmp[pattern] = 1;
+	sst.insert(pattern);
 
 	// set road tag.
 	if (!fa)
@@ -144,7 +146,7 @@ dfs(const string pattern, string *fa)
 
 dfs_end:
 	//clear visit tag.
-	mmp[pattern] = 0;
+	sst.erase(pattern);
 	//clear road tag.
 	path.pop_back();
 }
