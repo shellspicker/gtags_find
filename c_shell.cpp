@@ -26,6 +26,8 @@ using std::set;
 using std::pair;
 typedef string bash_ret;
 
+#define PRINT_PATH 0
+
 // 运行linux命令并返回.
 // 默认原样输出, 如果需要单行的字符串就开启trim_endline.
 bash_ret
@@ -77,8 +79,6 @@ void ss_to_s(stringstream &ss, string &s, char delim = '\n')
 vector<string> path;
 set<string> sst, st_edge;
 dsm_db db;
-
-#define PRINT_PATH 0
 
 void
 dfs(const string pattern, string *fa)
